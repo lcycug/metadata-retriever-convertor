@@ -72,9 +72,10 @@ retrieveMetadata() {
     # removing unpackage temporary folder
     rm -rf "${unPackaged}"
     # zipping source folder
-    zip -9 -r -q "${source}.zip" .-i "${source}/*"
+    zip -9 -r -q "${source}.zip" . -i "${source}/*"
     # removing source folder
     rm -rf "${source}"
+    echo -e "${checkMark} Metadata retrieval done."
 }
 
 echo "Starting..."
@@ -98,4 +99,3 @@ while getopts "u:" OPTION; do
         ;;
     esac
 done
-echo -e "${checkMark}Finished"
