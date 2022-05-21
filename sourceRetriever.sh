@@ -1,62 +1,101 @@
 #!/bin/bash
-testConvert() {
-    mkdir tmp
-    echo '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Package xmlns="http://soap.sforce.com/2006/04/metadata"><version>54.0</version></Package>' > tmp/package.xml
-    sfdx force:mdapi:convert  -r ./tmp -d ./tmp/source
-    if [[ -d "./tmp/source" ]]
-    then
-        rm -rf tmp
+# variables
+temp="temp"
+source="source"
+checkMark="\xE2\x9C\x94 "
+outputJson="output.json"
+unPackaged="unpackaged"
+packageDotXml="package.xml"
+packageDotXmlHelper="process.txt"
+packageDotXmlFooter="<version>54.0</version></Package>"
+template="<types><members>*</members><name>line</name></types>"
+packageDotXmlHeader="<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Package xmlns=\"http://soap.sforce.com/2006/04/metadata\">"
+# tell if a given folder is existing
+isFolderExisting() {
+    if [[ -d $1 ]]; then
+        return 1
     else
-        rm -rf tmp
+        return 0
+    fi
+}
+# test if convertable
+testConvert() {
+    mkdir "${temp}"
+    echo "${packageDotXmlHeader}${packageDotXmlFooter}" >"${temp}/${packageDotXml}"
+    sfdx force:mdapi:convert -r "./${temp}" -d "./${temp}/${source}"
+    isFolderExisting "${temp}/${source}"
+    if [ $? ]; then
+        rm -rf "${temp}"
+    else
+        rm -rf "${temp}"
         exit 1
     fi
-    rm -rf tmp
+    rm -rf "${temp}"
 }
-retrieveSObjectDescription() {
-    echo "You are requesting Metadata Description for Org: $targetOrg."
-    sfdx force:mdapi:describemetadata -u "$targetOrg" -f ./output.json
-    echo '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Package xmlns="http://soap.sforce.com/2006/04/metadata">' > package.xml
-    grep -o '"xmlName": "[^"]*' output.json | grep -o '[^"]*$' > process.txt
+# retrieve metadata from a given target org
+retrieveMetadata() {
+    # retrieving metadata description
+    sfdx force:mdapi:describemetadata -u "${targetOrg}" -f "./${outputJson}"
+    # writing header into package.xml
+    echo "${packageDotXmlHeader}" >"${packageDotXml}"
+    # reading metadata type into a temporary helper file
+    grep -o '"xmlName": "[^"]*' "./${outputJson}" | grep -o '[^"]*$' >"${packageDotXmlHelper}"
+    # removing output.json
     rm output.json
-    file="process.txt"
-
+    # reading the helper file into package.xml
     while read -r line; do
-        echo -e "<types><members>*</members><name>$line</name></types>" >> package.xml
-    done <$file
-    rm $file
-    echo "<version>54.0</version></Package>" >> package.xml
-
-    sfdx force:mdapi:retrieve -u "$targetOrg" -r ./ -k ./package.xml
-    rm package.xml
-
-    unzip unpackaged.zip
-    sfdx force:mdapi:convert -r ./unpackaged -d ./source
-    rm unpackaged.zip
-    zip -9 -r -q source.zip ./source/*
+        # read each metadata type with prefix and suffix from the helper file
+        echo "${template//line/$line}" >>${packageDotXml}
+    done <${packageDotXmlHelper}
+    # removing the helper
+    rm ${packageDotXmlHelper}
+    # wring footer into package.xml
+    echo "${packageDotXmlFooter}" >>"${packageDotXml}"
+    # retrieving metadata
+    sfdx force:mdapi:retrieve -u "${targetOrg}" -r ./ -k "${packageDotXml}"
+    # removing package.xml
+    rm "${packageDotXml}"
+    isFolderExisting "${temp}/${source}"
+    # identifying if the unpackaged.zip file is retrieved
+    if [ $? ]; then
+        echo -e "${checkMark}unpackage.zip retrieved."
+    else
+        echo "unpackage.zip retrieval failed."
+        exit 1
+    fi
+    # unzipping the unpackage.zip file
+    unzip "${unPackaged}.zip"
+    # converting metadata to source
+    sfdx force:mdapi:convert -r "${unPackaged}" -d "${source}"
+    # removing unpackage.zip file
+    rm "${unPackaged}.zip"
+    # removing unpackage temporary folder
+    rm -rf "${unPackaged}"
+    # zipping source folder
+    zip -9 -r -q "${source}.zip" .-i "${source}/*"
+    # removing source folder
+    rm -rf "${source}"
 }
 
-echo Starting...
-echo Checking sfdx-cli version
-echo
+echo "Starting..."
+echo -e "${checkMark}Checking sfdx-cli version"
 sfdx -v
-echo
+echo -e "${checkMark}Testing if in a SFDX folder"
 testConvert
-echo "You have these connections below."
+echo -e "${checkMark}Listing connections"
 sfdx force:org:list
-echo
-echo
-while getopts "u:" OPTION
-do
-   case $OPTION in
-       u)
-         targetOrg=$OPTARG
-
-         retrieveSObjectDescription
-         exit 0
-         ;;
-       ?)
-         echo "ERROR: unknonw options!! ABORT!!"
-         exit 1
-         ;;
-     esac
+# options
+while getopts "u:" OPTION; do
+    case $OPTION in
+    u)
+        targetOrg=$OPTARG
+        retrieveMetadata
+        exit 0
+        ;;
+    ?)
+        echo "ERROR: unknown options!! ABORT!!"
+        exit 1
+        ;;
+    esac
 done
+echo -e "${checkMark}Finished"
