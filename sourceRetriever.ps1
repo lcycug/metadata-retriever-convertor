@@ -31,6 +31,17 @@ else
     rm -rf $tempFolder
     exit 1
 }
+if ($username -eq "")
+{
+    sfdx force:org:display --json > $outputJson
+    $jsonElements = Get-Content $outputJson -Raw | ConvertFrom-Json
+    $username = $jsonElements.result.alias
+    Write-Output "Requesting metadata with the default connection: $username"
+}
+else
+{
+    Write-Output "Requesting metadata with the given connection:  $username"
+}
 # Retrieving metadata description
 sfdx force:mdapi:describemetadata -u $username -f $outputJson
 # Writing header into package.xml
