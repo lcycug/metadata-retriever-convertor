@@ -75,5 +75,8 @@ sfdx force:mdapi:convert -r $unPackagedFolder -d $sourceFolder
 rm $unPackagedDotZip
 rm -rf $unPackagedFolder
 # Zippping source files into source.zip
+rm -rf $sourceDotZip
 Compress-Archive -Path $sourceFolder -DestinationPath $sourceDotZip
 rm -rf $sourceFolder
+Write-Output "Metdata retrieval done."
+exit 0
