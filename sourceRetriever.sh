@@ -41,9 +41,9 @@ done
 if [ "$targetOrg" == "" ]; then
     sfdx force:org:display --json >$outputJson
     targetOrg=$(grep -o '"alias": "[^"]*' "./${outputJson}" | grep -o '[^"]*$')
-    echo "Requesting metadata with the default connect: $targetOrg"
+    echo "Requesting metadata with the default connection: $targetOrg"
 else
-    echo "Requesting metadata with the given connect:  $targetOrg"
+    echo "Requesting metadata with the given connection:  $targetOrg"
 fi
 # retrieving metadata description
 sfdx force:mdapi:describemetadata -u "${targetOrg}" -f "./${outputJson}"
