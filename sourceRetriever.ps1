@@ -2,9 +2,7 @@
 param(
     [Parameter()]
     [Alias("u")]
-    [String]$username,
-    [Alias("e")]
-    [String]$emotion
+    [String]$username
 )
 # Variables
 $tempFolder = "temp"
