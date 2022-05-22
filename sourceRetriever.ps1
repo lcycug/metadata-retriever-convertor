@@ -5,13 +5,13 @@ param(
     [String]$username
 )
 # Variables
-$checkMark="$([char]0x1b)[92m$([char]8730)"
-$manifest = "manifest"
+$checkMark = "$( [char]0x1b )[92m$( [char]8730 )"
+$manifestFolder = "manifest"
 $outputJson = "output.json"
 $packageDotXml = "package.xml"
 $packageDotXmlFooter = "<version>54.0</version></Package>"
 $packageDotXmlHeader = '<?xml version="1.0" encoding="UTF-8"?><Package xmlns="http://soap.sforce.com/2006/04/metadata">'
-$redX="$([char]0x1b)[91mx"
+$redX = "$( [char]0x1b )[91mx"
 $sourceDotZip = "source.zip"
 $sourceFolder = "source"
 $tempFolder = "SourceRetrieverTemporaryFolder"
@@ -25,9 +25,9 @@ Write-Output "$checkMark Testing if in a SFDX project..."
 Write-Output "$checkMark Removing the temporary folder and files if existing..."
 Remove-Item $tempFolder -Recurse
 Remove-Item $sourceDotZip
-New-Item -Path .\ -Name $tempFolder -ItemType "directory" -Force
-Write-Output "$packageDotXmlHeader$packageDotXmlFooter" > "$tempFolder\$manifest\$packageDotXml"
-sfdx force:mdapi:convert -r "$tempFolder\$manifest" -d "$tempFolder\$sourceFolder"
+New-Item -ItemType Directory -Path "$tempFolder/$manifestFolder" -Force
+Write-Output "$packageDotXmlHeader$packageDotXmlFooter" > "$tempFolder/$manifestFolder/$packageDotXml"
+sfdx force:mdapi:convert -r "$tempFolder/$manifestFolder" -d "$tempFolder/$sourceFolder"
 if (-Not(Test-Path "$tempFolder/$sourceFolder" -PathType Any))
 {
     Write-Output "$redX Failed the testing..."
@@ -50,7 +50,7 @@ else
 Write-Output "$checkMark Retrieving metadata description..."
 sfdx force:mdapi:describemetadata -u $username -f $outputJson
 # Writing header into package.xml
-Write-Output $packageDotXmlHeader > $packageDotXml
+Write-Output $packageDotXmlHeader > "$manifestFolder/$packageDotXml"
 # Reading metadata type into a temporary helper file
 $jsonElements = Get-Content $outputJson -Raw | ConvertFrom-Json
 foreach ($element in $jsonElements.metadataObjects)
@@ -60,7 +60,7 @@ foreach ($element in $jsonElements.metadataObjects)
 Write-Output "$checkMark Writing package footer into package.xml..."
 Write-Output $packageDotXmlFooter >> $packageDotXml
 Write-Output "$checkMark Retrieving metadata..."
-sfdx force:mdapi:retrieve -u $username -r .\
+sfdx force:mdapi:retrieve -u $username -r ./
 if (Test-Path $unPackagedDotZip -PathType Any)
 {
     Write-Output "$checkMark $unPackagedDotZip retrieval done."
@@ -76,8 +76,8 @@ Write-Output "$checkMark Converting metadata into source format..."
 sfdx force:mdapi:convert -r $unPackagedFolder -d $sourceFolder
 Write-Output "$checkMark Zipping $sourceFolder files into $sourceDotZip..."
 Compress-Archive -Path $sourceFolder -DestinationPath $sourceDotZip
-Copy-Item $sourceDotZip -Destination .\..\
-Set-Location -Path .\..\
+Copy-Item $sourceDotZip -Destination ./../
+Set-Location -Path ./../
 Write-Output "$checkMark Removing the temporary folder..."
 Remove-Item $tempFolder -Recurse
 Write-Output "$checkMark Metdata retrieval done."
