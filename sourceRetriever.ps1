@@ -15,27 +15,22 @@ $packageDotXml = "package.xml"
 $packageDotXmlFooter = "<version>54.0</version></Package>"
 $template = "<types><members>*</members><name>line</name></types>"
 $packageDotXmlHeader = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Package xmlns="http://soap.sforce.com/2006/04/metadata">'
-# Functions
-function Test-Convert
-{
-    mkdir $tempFolder
-    Write-Output "$packageDotXmlHeader$packageDotXmlFooter" > "$tempFolder/$packageDotXml"
-    sfdx force:mdapi:convert -r $tempFolder -d "$tempFolder/$sourceFolder"
-    if (Test-Path "$tempFolder/$sourceFolder" -PathType Any)
-    {
-        rm -rf $tempFolder
-    }
-    else
-    {
-        rm -rf $tempFolder
-        exit 1
-    }
-}
 # --- Main ---
 # Listing connections
 sfdx force:org:list
 # Testing if in a SFDX project
-Test-Convert
+mkdir $tempFolder
+Write-Output "$packageDotXmlHeader$packageDotXmlFooter" > "$tempFolder/$packageDotXml"
+sfdx force:mdapi:convert -r $tempFolder -d "$tempFolder/$sourceFolder"
+if (Test-Path "$tempFolder/$sourceFolder" -PathType Any)
+{
+    rm -rf $tempFolder
+}
+else
+{
+    rm -rf $tempFolder
+    exit 1
+}
 # Retrieving metadata description
 sfdx force:mdapi:describemetadata -u $username -f $outputJson
 # Writing header into package.xml
